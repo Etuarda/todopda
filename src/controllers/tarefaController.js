@@ -22,10 +22,8 @@ function validateTarefaBody(body) {
   const errors = []
 
   const titulo = typeof body.titulo === 'string' ? body.titulo.trim() : ''
-  const descricao =
-    typeof body.descricao === 'string' ? body.descricao.trim() : null
-  const status =
-    typeof body.status === 'string' ? body.status.trim() : 'a fazer'
+  const descricao = typeof body.descricao === 'string' ? body.descricao.trim() : null
+  const status = typeof body.status === 'string' ? body.status.trim() : 'a fazer'
 
   if (!titulo) {
     errors.push('O campo "titulo" é obrigatório e não pode ser vazio.')
@@ -68,7 +66,7 @@ async function criarTarefa(req, res, next) {
       return res.status(400).json({ erros: errors })
     }
 
-    // userId sempre vem do token (não do body)
+    // userId vem do authMiddleware (x-user-id), nunca do body
     const tarefa = await Tarefa.create({ ...data, userId })
     return res.status(201).json(tarefa)
   } catch (error) {
