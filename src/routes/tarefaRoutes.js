@@ -8,11 +8,9 @@ const {
   deletarTarefa
 } = require('../controllers/tarefaController')
 
-const { authMiddleware } = require('../middlewares/authMiddleware')
-
 const router = express.Router()
 
-router.use(authMiddleware)
+// ✅ sem router.use(authMiddleware)
 
 router.post('/tarefas', criarTarefa)
 router.get('/tarefas', listarTarefas)

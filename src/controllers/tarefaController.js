@@ -1,5 +1,13 @@
 // src/controllers/tarefaController.js
 // Controlador com a lógica de negócio das tarefas.
+const { User } = require('../models/User')
+
+const DEFAULT_USER_EMAIL = process.env.DEFAULT_USER_EMAIL || 'default@todopda.local'
+
+async function getDefaultUserId() {
+  const user = await User.findOne({ where: { email: DEFAULT_USER_EMAIL } })
+  return user?.id || null
+}
 
 const { Tarefa, ALLOWED_STATUS } = require('../models/Tarefa')
 
@@ -55,10 +63,8 @@ function getAuthenticatedUserId(req) {
 // POST /tarefas
 async function criarTarefa(req, res, next) {
   try {
-    const userId = getAuthenticatedUserId(req)
-    if (!userId) {
-      return res.status(401).json({ erro: 'Usuário não autenticado.' })
-    }
+    const userId = await getDefaultUserId()
+    if (!userId) return res.status(500).json({ erro: 'Usuário padrão não encontrado.' })
 
     const { errors, data } = validateTarefaBody(req.body)
 
@@ -77,13 +83,11 @@ async function criarTarefa(req, res, next) {
 // GET /tarefas
 async function listarTarefas(req, res, next) {
   try {
-    const userId = getAuthenticatedUserId(req)
-    if (!userId) {
-      return res.status(401).json({ erro: 'Usuário não autenticado.' })
-    }
+    const userId = await getDefaultUserId()
+    if (!userId) return res.status(500).json({ erro: 'Usuário padrão não encontrado.' })
+    const where = { userId }
 
     const { status } = req.query
-    const where = { userId }
 
     if (typeof status === 'string' && status.trim()) {
       const normalizedStatus = status.trim()
@@ -109,17 +113,15 @@ async function listarTarefas(req, res, next) {
 // GET /tarefas/:id
 async function buscarTarefaPorId(req, res, next) {
   try {
-    const userId = getAuthenticatedUserId(req)
-    if (!userId) {
-      return res.status(401).json({ erro: 'Usuário não autenticado.' })
-    }
+    const userId = await getDefaultUserId()
+    if (!userId) return res.status(500).json({ erro: 'Usuário padrão não encontrado.' })
+    const where = { userId }
 
     const id = parseId(req.params.id)
     if (!id) {
       return res.status(400).json({ erro: 'ID inválido.' })
     }
 
-    // Busca sempre no escopo do usuário autenticado
     const tarefa = await Tarefa.findOne({ where: { id, userId } })
     if (!tarefa) {
       return res.status(404).json({ erro: 'Tarefa não encontrada.' })
@@ -134,10 +136,9 @@ async function buscarTarefaPorId(req, res, next) {
 // PUT /tarefas/:id
 async function atualizarTarefa(req, res, next) {
   try {
-    const userId = getAuthenticatedUserId(req)
-    if (!userId) {
-      return res.status(401).json({ erro: 'Usuário não autenticado.' })
-    }
+    const userId = await getDefaultUserId()
+    if (!userId) return res.status(500).json({ erro: 'Usuário padrão não encontrado.' })
+    const where = { userId }
 
     const id = parseId(req.params.id)
     if (!id) {
@@ -167,10 +168,9 @@ async function atualizarTarefa(req, res, next) {
 // PATCH /tarefas/:id/status
 async function atualizarStatusTarefa(req, res, next) {
   try {
-    const userId = getAuthenticatedUserId(req)
-    if (!userId) {
-      return res.status(401).json({ erro: 'Usuário não autenticado.' })
-    }
+    const userId = await getDefaultUserId()
+    if (!userId) return res.status(500).json({ erro: 'Usuário padrão não encontrado.' })
+    const where = { userId }
 
     const id = parseId(req.params.id)
     if (!id) {
@@ -201,10 +201,9 @@ async function atualizarStatusTarefa(req, res, next) {
 // DELETE /tarefas/:id
 async function deletarTarefa(req, res, next) {
   try {
-    const userId = getAuthenticatedUserId(req)
-    if (!userId) {
-      return res.status(401).json({ erro: 'Usuário não autenticado.' })
-    }
+    const userId = await getDefaultUserId()
+    if (!userId) return res.status(500).json({ erro: 'Usuário padrão não encontrado.' })
+    const where = { userId }
 
     const id = parseId(req.params.id)
     if (!id) {
