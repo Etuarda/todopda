@@ -6,17 +6,19 @@ const authRoutes = require('./routes/authRoutes')
 const app = express()
 
 const corsOptions = {
-  origin: '*', // se quiser restringir, troque pelo seu domínio do front
+  origin: '*', // Em produção, você pode colocar a URL do seu frontend aqui
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'x-user-id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'X-User-Id'], // Adicione variações de caixa
+  credentials: true,
   optionsSuccessStatus: 204
-}
+};
 
-app.use(cors(corsOptions))
-// Garante que o preflight (OPTIONS) responda corretamente
-app.options('*', cors(corsOptions))
+app.use(cors(corsOptions));
+// Esta linha é vital para responder a requisições OPTIONS do navegador
+app.options('*', cors(corsOptions)); 
 
-app.use(express.json())
+app.use(express.json());
+/
 
 app.use('/api', authRoutes)
 app.use('/api', tarefaRoutes)
