@@ -1,33 +1,9 @@
 // src/controllers/authController.js
 const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
 const { User } = require('../models/User')
 
 function normalizeEmail(value) {
     return typeof value === 'string' ? value.trim().toLowerCase() : ''
-}
-
-function createHttpError(statusCode, code, message) {
-    const err = new Error(message)
-    err.statusCode = statusCode
-    err.code = code
-    err.publicMessage = message
-    return err
-}
-
-function signToken(user) {
-    const secret = process.env.JWT_SECRET
-    const expiresIn = process.env.JWT_EXPIRES_IN || '7d'
-
-    if (!secret || typeof secret !== 'string' || !secret.trim()) {
-        throw createHttpError(500, 'JWT_SECRET_MISSING', 'JWT_SECRET não configurado.')
-    }
-
-    return jwt.sign(
-        { email: user.email },
-        secret,
-        { subject: String(user.id), expiresIn }
-    )
 }
 
 async function register(req, res, next) {
@@ -56,17 +32,10 @@ async function register(req, res, next) {
 
         const passwordHash = await bcrypt.hash(senha, 10)
 
-        const user = await User.create({
-            nome,
-            email,
-            passwordHash
-        })
-
-        const token = signToken(user)
+        const user = await User.create({ nome, email, passwordHash })
 
         return res.status(201).json({
-            user: { id: user.id, nome: user.nome, email: user.email },
-            token
+            user: { id: user.id, nome: user.nome, email: user.email }
         })
     } catch (error) {
         return next(error)
@@ -95,11 +64,9 @@ async function login(req, res, next) {
             return res.status(401).json({ erro: 'Credenciais inválidas.', code: 'INVALID_CREDENTIALS' })
         }
 
-        const token = signToken(user)
-
+        // Sem JWT: devolve só o user para o cliente usar o id nas próximas requisições
         return res.status(200).json({
-            user: { id: user.id, nome: user.nome, email: user.email },
-            token
+            user: { id: user.id, nome: user.nome, email: user.email }
         })
     } catch (error) {
         return next(error)

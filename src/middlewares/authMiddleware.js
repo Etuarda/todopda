@@ -1,30 +1,33 @@
-const jwt = require('jsonwebtoken')
+// src/middlewares/authMiddleware.js
+const { User } = require('../models/User')
 
-function authMiddleware(req, res, next) {
+// Auth simples SEM JWT (didático).
+// O cliente envia: x-user-id: <id do usuário>
+// Isso NÃO é seguro em produção, mas remove JWT mantendo o escopo por usuário.
+async function authMiddleware(req, res, next) {
     try {
-        const authHeader = req.headers.authorization
+        const rawUserId = req.header('x-user-id')
+        const userId = Number(rawUserId)
 
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ erro: 'Token ausente.' })
+        if (!rawUserId || !Number.isInteger(userId) || userId <= 0) {
+            return res.status(401).json({
+                erro: 'Cabeçalho x-user-id ausente ou inválido. Faça login.',
+                code: 'AUTH_USER_ID_MISSING'
+            })
         }
 
-        const token = authHeader.split(' ')[1]
-        const secret = process.env.JWT_SECRET
-
-        if (!secret) {
-            return res.status(500).json({ erro: 'JWT_SECRET não configurado.' })
+        const user = await User.findByPk(userId)
+        if (!user) {
+            return res.status(401).json({
+                erro: 'Usuário inválido. Faça login novamente.',
+                code: 'AUTH_USER_NOT_FOUND'
+            })
         }
 
-        const payload = jwt.verify(token, secret)
-
-        req.user = {
-            id: Number(payload.sub),
-            email: payload.email
-        }
-
+        req.user = { id: user.id, email: user.email }
         return next()
     } catch (err) {
-        return res.status(401).json({ erro: 'Token inválido ou expirado.' })
+        return next(err)
     }
 }
 
