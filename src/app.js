@@ -22,12 +22,22 @@ app.get('/', (req, res) => {
 app.use((req, res) => {
   return res.status(404).json({ erro: 'Endpoint não encontrado.' })
 })
-
 app.use((err, req, res, next) => {
-  console.error('Erro interno:', err)
-  return res
-    .status(500)
-    .json({ erro: 'Erro interno do servidor. Tente novamente mais tarde.' })
+  const status = Number(err.statusCode) || 500
+  const code = err.code || 'INTERNAL_ERROR'
+  const message = err.publicMessage || 'Erro interno do servidor.'
+
+  console.error('Erro interno:', {
+    method: req.method,
+    path: req.originalUrl,
+    status,
+    code,
+    name: err.name,
+    message: err.message
+  })
+
+  return res.status(status).json({ erro: message, code })
 })
+
 
 module.exports = app
