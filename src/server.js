@@ -14,6 +14,10 @@ async function start() {
     console.log('Models sincronizados com o banco de dados.')
 
     const user = await ensureDefaultUser()
+
+    // Usuário fixo para toda a API (sem login no frontend)
+    app.locals.defaultUserId = user.id
+
     console.log(`Usuário padrão OK: id=${user.id}, email=${user.email}`)
 
     app.listen(PORT, () => {

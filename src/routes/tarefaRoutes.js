@@ -8,9 +8,12 @@ const {
   deletarTarefa
 } = require('../controllers/tarefaController')
 
+const { authMiddleware } = require('../middlewares/authMiddleware')
+
 const router = express.Router()
 
-// ✅ sem router.use(authMiddleware)
+// Sempre injeta req.user com o usuário padrão
+router.use(authMiddleware)
 
 router.post('/tarefas', criarTarefa)
 router.get('/tarefas', listarTarefas)

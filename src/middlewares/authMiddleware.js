@@ -1,27 +1,25 @@
 // src/middlewares/authMiddleware.js
 const { User } = require('../models/User')
 
-// Auth simples SEM JWT (didático).
-// O cliente envia: x-user-id: <id do usuário>
-// Isso NÃO é seguro em produção, mas remove JWT mantendo o escopo por usuário.
+// Auth didático SEM JWT e SEM header obrigatório.
+// A API sempre usa o usuário padrão criado no boot (server.js).
 async function authMiddleware(req, res, next) {
   try {
-    const rawUserId = req.header('x-user-id')
-    const userId = Number(rawUserId)
+    const defaultUserId = Number(req.app?.locals?.defaultUserId)
 
-    if (!rawUserId || !Number.isInteger(userId) || userId <= 0) {
-      return res.status(401).json({
+    if (!Number.isInteger(defaultUserId) || defaultUserId <= 0) {
+      return res.status(500).json({
         erro:
-          'Envie o header x-user-id com o id do usuário (ex: x-user-id: 1). Faça login para obter o id.',
-        code: 'AUTH_USER_ID_MISSING'
+          'Usuário padrão não foi configurado. Verifique se ensureDefaultUser() está rodando no server.js.',
+        code: 'DEFAULT_USER_NOT_CONFIGURED'
       })
     }
 
-    const user = await User.findByPk(userId)
+    const user = await User.findByPk(defaultUserId)
     if (!user) {
-      return res.status(401).json({
-        erro: 'Usuário inválido. Faça login novamente.',
-        code: 'AUTH_USER_NOT_FOUND'
+      return res.status(500).json({
+        erro: 'Usuário padrão não existe no banco. Recrie o usuário padrão.',
+        code: 'DEFAULT_USER_NOT_FOUND'
       })
     }
 

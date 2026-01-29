@@ -11,11 +11,13 @@ async function ensureDefaultUser() {
   if (existing) return existing
 
   const passwordHash = await bcrypt.hash(DEFAULT_USER_PASSWORD, 10)
+
   const user = await User.create({
     nome: DEFAULT_USER_NAME,
     email: DEFAULT_USER_EMAIL,
     passwordHash
   })
+
   return user
 }
 
