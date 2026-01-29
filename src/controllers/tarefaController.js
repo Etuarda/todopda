@@ -43,16 +43,33 @@ function validateTarefaBody(body) {
   }
 }
 
+function getAuthenticatedUserId(req) {
+  const userId = req?.user?.id
+  const normalized = Number(userId)
+
+  if (!Number.isInteger(normalized) || normalized <= 0) {
+    return null
+  }
+
+  return normalized
+}
+
 // POST /tarefas
 async function criarTarefa(req, res, next) {
   try {
+    const userId = getAuthenticatedUserId(req)
+    if (!userId) {
+      return res.status(401).json({ erro: 'Usuário não autenticado.' })
+    }
+
     const { errors, data } = validateTarefaBody(req.body)
 
     if (errors.length > 0) {
       return res.status(400).json({ erros: errors })
     }
 
-    const tarefa = await Tarefa.create(data)
+    // userId sempre vem do token (não do body)
+    const tarefa = await Tarefa.create({ ...data, userId })
     return res.status(201).json(tarefa)
   } catch (error) {
     next(error)
@@ -62,16 +79,22 @@ async function criarTarefa(req, res, next) {
 // GET /tarefas
 async function listarTarefas(req, res, next) {
   try {
-    const { status } = req.query
-    const where = {}
+    const userId = getAuthenticatedUserId(req)
+    if (!userId) {
+      return res.status(401).json({ erro: 'Usuário não autenticado.' })
+    }
 
-    if (status) {
-      if (!isValidStatus(status)) {
+    const { status } = req.query
+    const where = { userId }
+
+    if (typeof status === 'string' && status.trim()) {
+      const normalizedStatus = status.trim()
+      if (!isValidStatus(normalizedStatus)) {
         return res.status(400).json({
           erro: `Status inválido. Use um dos valores: ${ALLOWED_STATUS.join(', ')}.`
         })
       }
-      where.status = status
+      where.status = normalizedStatus
     }
 
     const tarefas = await Tarefa.findAll({
@@ -88,12 +111,18 @@ async function listarTarefas(req, res, next) {
 // GET /tarefas/:id
 async function buscarTarefaPorId(req, res, next) {
   try {
+    const userId = getAuthenticatedUserId(req)
+    if (!userId) {
+      return res.status(401).json({ erro: 'Usuário não autenticado.' })
+    }
+
     const id = parseId(req.params.id)
     if (!id) {
       return res.status(400).json({ erro: 'ID inválido.' })
     }
 
-    const tarefa = await Tarefa.findByPk(id)
+    // Busca sempre no escopo do usuário autenticado
+    const tarefa = await Tarefa.findOne({ where: { id, userId } })
     if (!tarefa) {
       return res.status(404).json({ erro: 'Tarefa não encontrada.' })
     }
@@ -107,12 +136,17 @@ async function buscarTarefaPorId(req, res, next) {
 // PUT /tarefas/:id
 async function atualizarTarefa(req, res, next) {
   try {
+    const userId = getAuthenticatedUserId(req)
+    if (!userId) {
+      return res.status(401).json({ erro: 'Usuário não autenticado.' })
+    }
+
     const id = parseId(req.params.id)
     if (!id) {
       return res.status(400).json({ erro: 'ID inválido.' })
     }
 
-    const tarefa = await Tarefa.findByPk(id)
+    const tarefa = await Tarefa.findOne({ where: { id, userId } })
     if (!tarefa) {
       return res.status(404).json({ erro: 'Tarefa não encontrada.' })
     }
@@ -123,7 +157,8 @@ async function atualizarTarefa(req, res, next) {
       return res.status(400).json({ erros: errors })
     }
 
-    await tarefa.update(data)
+    // Não permite trocar ownership (mesmo que alguém tente mandar userId no body)
+    await tarefa.update({ ...data, userId })
 
     return res.status(200).json(tarefa)
   } catch (error) {
@@ -134,24 +169,31 @@ async function atualizarTarefa(req, res, next) {
 // PATCH /tarefas/:id/status
 async function atualizarStatusTarefa(req, res, next) {
   try {
+    const userId = getAuthenticatedUserId(req)
+    if (!userId) {
+      return res.status(401).json({ erro: 'Usuário não autenticado.' })
+    }
+
     const id = parseId(req.params.id)
     if (!id) {
       return res.status(400).json({ erro: 'ID inválido.' })
     }
 
     const { status } = req.body
-    if (typeof status !== 'string' || !isValidStatus(status.trim())) {
+    const normalizedStatus = typeof status === 'string' ? status.trim() : ''
+
+    if (!normalizedStatus || !isValidStatus(normalizedStatus)) {
       return res.status(400).json({
         erro: `O campo "status" é obrigatório e deve ser um dos valores: ${ALLOWED_STATUS.join(', ')}.`
       })
     }
 
-    const tarefa = await Tarefa.findByPk(id)
+    const tarefa = await Tarefa.findOne({ where: { id, userId } })
     if (!tarefa) {
       return res.status(404).json({ erro: 'Tarefa não encontrada.' })
     }
 
-    await tarefa.update({ status: status.trim() })
+    await tarefa.update({ status: normalizedStatus })
     return res.status(200).json(tarefa)
   } catch (error) {
     next(error)
@@ -161,12 +203,17 @@ async function atualizarStatusTarefa(req, res, next) {
 // DELETE /tarefas/:id
 async function deletarTarefa(req, res, next) {
   try {
+    const userId = getAuthenticatedUserId(req)
+    if (!userId) {
+      return res.status(401).json({ erro: 'Usuário não autenticado.' })
+    }
+
     const id = parseId(req.params.id)
     if (!id) {
       return res.status(400).json({ erro: 'ID inválido.' })
     }
 
-    const tarefa = await Tarefa.findByPk(id)
+    const tarefa = await Tarefa.findOne({ where: { id, userId } })
     if (!tarefa) {
       return res.status(404).json({ erro: 'Tarefa não encontrada.' })
     }

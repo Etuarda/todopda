@@ -1,31 +1,28 @@
 const express = require('express')
+const cors = require('cors')
 const tarefaRoutes = require('./routes/tarefaRoutes')
+const authRoutes = require('./routes/authRoutes')
 
 const app = express()
 
-// Middleware para interpretar JSON
+app.use(cors())
 app.use(express.json())
 
-// Middleware de log simples
 app.use((req, res, next) => {
-  const now = new Date().toISOString()
   next()
 })
 
-// Prefixo para as rotas da API
+app.use('/api', authRoutes)
 app.use('/api', tarefaRoutes)
 
-// Rota padrão para ver se o servidor está online
 app.get('/', (req, res) => {
   res.status(200).json({ mensagem: 'API To-Do List está online.' })
 })
 
-// Middleware para rota não encontrada
-app.use((req, res, next) => {
+app.use((req, res) => {
   return res.status(404).json({ erro: 'Endpoint não encontrado.' })
 })
 
-// Middleware genérico de tratamento de erros
 app.use((err, req, res, next) => {
   console.error('Erro interno:', err)
   return res

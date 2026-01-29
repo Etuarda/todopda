@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize')
 const sequelize = require('../config/database')
 
-// Status permitidos para as tarefas
 const ALLOWED_STATUS = ['a fazer', 'em andamento', 'concluída']
 
 const Tarefa = sequelize.define(
@@ -15,11 +14,7 @@ const Tarefa = sequelize.define(
     titulo: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: {
-          msg: 'Título não pode ser vazio.'
-        }
-      }
+      validate: { notEmpty: { msg: 'Título não pode ser vazio.' } }
     },
     descricao: {
       type: DataTypes.TEXT,
@@ -35,6 +30,10 @@ const Tarefa = sequelize.define(
           msg: `Status inválido. Use um dos valores: ${ALLOWED_STATUS.join(', ')}.`
         }
       }
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
     }
   },
   {
@@ -43,8 +42,4 @@ const Tarefa = sequelize.define(
   }
 )
 
-// Exporta também os status permitidos para reutilizar no controller
-module.exports = {
-  Tarefa,
-  ALLOWED_STATUS
-}
+module.exports = { Tarefa, ALLOWED_STATUS }
